@@ -33,62 +33,62 @@ void addRect(std::shared_ptr<std::vector<std::shared_ptr<SDL_Rect>>> rs) {
 
 struct Circle {
 	int x;
+	int prevX;
 	int y;
+	int prevY;
 	int r; // radius
 };
 
 void addCircle(std::shared_ptr<std::vector<std::shared_ptr<Circle>>> cs) {
 
 	std::shared_ptr<Circle> c = std::make_shared<Circle>();
-	c->x = 0;
-	c->y = 0;
-	c->r = 50;
+	c->x = 20;
+	c->prevX = 0;
+	c->y = 80;
+	c->prevY = 105;
+	c->r = 10;
 	cs->emplace_back(c);
 } 
 
-void move(std::shared_ptr<SDL_Rect> r) {
-	int d = 2;
+void addCirclePrevious(std::shared_ptr<std::vector<std::shared_ptr<Circle>>> cs, int x, int y) {
+
+	std::shared_ptr<Circle> c = std::make_shared<Circle>();
+	c->x = 20;
+	c->prevX = x;
+	c->y = 80;
+	c->prevY = y;
+	c->r = 10;
+	cs->emplace_back(c);
+} 
+
+
+void moveRectangle(std::shared_ptr<SDL_Rect> r) {
 	r->x = r->x+2;
 	r->y = r->y+2;
 }
 
-void fill_circle(SDL_Surface *surface, int cx, int cy, int radius, Uint32 pixel)
-{
-    std::cout << "radius " << radius << std::endl;
-    // Note that there is more to altering the bitrate of this 
-    // method than just changing this value.  See how pixels are
-    // altered at the following web page for tips:
-    //   http://www.libsdl.org/intro.en/usingvideo.html
-    static const int BPP = 4;
-    std::cout << "== 1" << std::endl;  
-    double r = (double)radius;
- 
-    for (double dy = 1; dy <= r; dy += 1.0)
-    {
-        // This loop is unrolled a bit, only iterating through half of the
-        // height of the circle.  The result is used to draw a scan line and
-        // its mirror image below it.
- 
-        // The following formula has been simplified from our original.  We
-        // are using half of the width of the circle because we are provided
-        // with a center and we need left/right coordinates.
- 
-        double dx = floor(sqrt((2.0 * r * dy) - (dy * dy)));
-        int x = cx - dx;
- 
-        // Grab a pointer to the left-most pixel for each half of the circle
-        Uint8 *target_pixel_a = (Uint8 *)surface->pixels + ((int)(cy + r - dy)) * surface->pitch + x * BPP;
-        Uint8 *target_pixel_b = (Uint8 *)surface->pixels + ((int)(cy - r + dy)) * surface->pitch + x * BPP;
- 
-        for (; x <= cx + dx; x++)
-        {
-            *(Uint32 *)target_pixel_a = pixel;
-            *(Uint32 *)target_pixel_b = pixel;
-            std::cout << "== 2" << std::endl;  
-            target_pixel_a += BPP;
-            target_pixel_b += BPP;
-        }
-    }
+void moveCircle(std::shared_ptr<Circle> c) {
+	c->x = c->x+2;
+	c->y = c->y+2;
+}
+
+void moveCircleTrajectory(std::shared_ptr<Circle> c) {
+	int g; g = 9.8;
+ 	int t; t = 1;
+	int velocy; velocy = c->y - c->prevY;
+
+	//int deltaY; deltaY =int((velocy) + (0.5 * g));
+	int deltaY; deltaY =int ((velocy) + (0.25 * g));
+	int projY; projY = c->y + deltaY;
+	int deltaX; deltaX = c->x - c->prevX;
+
+	//# set the new position
+	c->prevX = c->x;
+	c->prevY = c->y;
+	c->x = c->x + deltaX;
+	c->y = c->y + deltaY;
+	// TODO wrap if needed
+	return;
 }
 
 int main(int, char**){
@@ -97,7 +97,6 @@ int main(int, char**){
 		logSDLError(std::cout, "SDL_Init");
 		return 1;
 	}
-
 
 	//Setup our window and renderer, this time let's put our window in the center
 	//of the screen
@@ -150,10 +149,9 @@ int main(int, char**){
 			}
 			// user clicks the mouse
 			if (e.type == SDL_MOUSEBUTTONDOWN){
-				//std::cout << "add" << std::endl;
-				addRect(rects);
-				addCircle(circles);
-				//std::cout << "add size"<< rects->size()  << std::endl;
+				//addRect(rects);
+				//addCircle(circles);
+				addCirclePrevious(circles, e.button.x, e.button.y);
 			}
 		}
 
@@ -162,12 +160,12 @@ int main(int, char**){
 
 		SDL_SetRenderDrawColor( renderer, 200, 0, 200, 255 );
 		for( std::shared_ptr<SDL_Rect> &r : *rects ) {
-			move(r);
+			moveRectangle(r);
 			SDL_RenderFillRect( renderer, r.get() );
 		}
 		SDL_SetRenderDrawColor( renderer, 200, 200, 0, 255 );
 		for( std::shared_ptr<Circle> &c : *circles ) {
-			//move(r);
+			moveCircleTrajectory(c);
 			int result = filledCircleColor(renderer, c->x, c->y, c->r, 0xFF0000FF);
 
 		}
