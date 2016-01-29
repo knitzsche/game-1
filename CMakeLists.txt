@@ -10,6 +10,7 @@ set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/bin)
 	set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall -Wextra -pedantic -std=c++11")
 
 find_package(SDL2 REQUIRED)
+include(FindPkgConfig)
 include_directories(${SDL2_INCLUDE_DIR})
 include_directories(include)
 
