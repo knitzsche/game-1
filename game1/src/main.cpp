@@ -46,18 +46,24 @@ void addCircle(std::shared_ptr<std::vector<std::shared_ptr<Circle>>> cs) {
 	c->prevX = 0;
 	c->y = 80;
 	c->prevY = 105;
-	c->r = 10;
+	c->r = 5;
 	cs->emplace_back(c);
 } 
 
-void addCirclePrevious(std::shared_ptr<std::vector<std::shared_ptr<Circle>>> cs, int x, int y) {
+
+struct Gun {
+	int x;
+	int y;
+};
+
+void addCirclePrevious(std::shared_ptr<std::vector<std::shared_ptr<Circle>>> cs, std::shared_ptr<Gun> gun, int x, int y) {
 
 	std::shared_ptr<Circle> c = std::make_shared<Circle>();
-	c->x = 20;
-	c->prevX = x;
-	c->y = 80;
+	c->x = gun->x;
+	c->prevX = c->x-5;
+	c->y = gun->y;
 	c->prevY = y;
-	c->r = 10;
+	c->r = 5;
 	cs->emplace_back(c);
 } 
 
@@ -78,7 +84,7 @@ void moveCircleTrajectory(std::shared_ptr<Circle> c) {
 	int velocy; velocy = c->y - c->prevY;
 
 	//int deltaY; deltaY =int((velocy) + (0.5 * g));
-	int deltaY; deltaY =int ((velocy) + (0.25 * g));
+	int deltaY; deltaY =int(velocy) + 1;
 	int projY; projY = c->y + deltaY;
 	int deltaX; deltaX = c->x - c->prevX;
 
@@ -97,6 +103,10 @@ int main(int, char**){
 		logSDLError(std::cout, "SDL_Init");
 		return 1;
 	}
+
+	std::shared_ptr<Gun> gun = std::make_shared<Gun>();
+	gun->x = 80;
+	gun->y = 100;
 
 	//Setup our window and renderer, this time let's put our window in the center
 	//of the screen
@@ -151,7 +161,7 @@ int main(int, char**){
 			if (e.type == SDL_MOUSEBUTTONDOWN){
 				//addRect(rects);
 				//addCircle(circles);
-				addCirclePrevious(circles, e.button.x, e.button.y);
+				addCirclePrevious(circles, gun, e.button.x, e.button.y);
 			}
 		}
 
