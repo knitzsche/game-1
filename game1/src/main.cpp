@@ -127,6 +127,21 @@ void moveCircleTrajectory(std::shared_ptr<Circle> c) {
 }
 
 bool hit(std::shared_ptr<Circle> b, std::shared_ptr<Target> t) {
+	// this only checks current pos. I need to check pos between
+	// current and previous. one for each distance diameter of target
+	// so calc distance travelled since previous
+	// divide that by target diameter
+	// get points along line for each diameter distance
+	// and check them for hits
+	
+	int dofB;//distance bullet has travelled
+	int deltaXofB;
+	int deltaYofB;
+	deltaXofB = abs(b->x - b->prevX);
+	deltaYofB = abs(b->y - b->prevY);
+	dofB = sqrt(pow(deltaXofB,2) + pow(deltaYofB,2));
+	cout << "dofb: " << dofB << endl;
+
 	int x; int y; int d;
 	x = abs(b->x - t->x);
 	y = abs(b->y - t->y);
@@ -174,11 +189,11 @@ int main(int, char**){
 	bg.r = 20; bg.g = 20; bg.b = 20; bg.a = 255;
 
 	RGB flash;
-	flash.r = 50; flash.g = 50; flash.b = 50; flash.a = 255;
+	flash.r = 20; flash.g = 50; flash.b = 200; flash.a = 255;
 
 	std::shared_ptr<Gun> gun = std::make_shared<Gun>();
 	gun->x = 200;
-	gun->y = 100;
+	gun->y = SCREEN_HEIGHT - 150;
 
 	// make a target
 	std::shared_ptr<Target> target;
@@ -248,20 +263,17 @@ int main(int, char**){
 		SDL_SetRenderDrawColor( renderer, 200, 100, 200, 255 );
 		SDL_RenderDrawLine(renderer, mx, my, gun->x, gun ->y);
 
-/*
-		SDL_SetRenderDrawColor( renderer, 200, 0, 200, 255 );
-		for( std::shared_ptr<SDL_Rect> &r : *rects ) {
-			SDL_RenderFillRect( renderer, r.get() );
-			moveRectangle(r);
-		}
-*/
-		//Render bullet
+		//Render bullets
 		SDL_SetRenderDrawColor( renderer, 200, 200, 0, 255 );
+		shared_ptr<vector<shared_ptr<Circle>>> newCircles = make_shared<vector<shared_ptr<Circle>>>(); 
 		for( std::shared_ptr<Circle> &c : *circles ) {
 			int result = filledCircleColor(renderer, c->x, c->y, c->r, 0xFF0000FF);
 			moveCircleTrajectory(c);
-
+			if (c->x < SCREEN_WIDTH && c->x > 0 && c->y < SCREEN_HEIGHT && c->y > 0 ){
+				newCircles->emplace_back(c);
+			}
 		}
+		circles = newCircles;
 
 		// render target
 		if (isFlash) { 
@@ -272,7 +284,7 @@ int main(int, char**){
 				target = makeTarget();
 			}
 			
-			int result = filledCircleColor(renderer, target->x, target->y, target->radius, 0xFFFF0000);
+			filledCircleRGBA(renderer, target->x, target->y, target->radius, flash.r, flash.g, flash.b, target ->alpha);
 		} else {
 			bool isHit;
 			isHit = false;
@@ -285,13 +297,14 @@ int main(int, char**){
 				isFlash = true;
 				std::cout << " a HIT!" << std::endl;
 			} else {
-				circleRGBA(renderer, target->x, target->y, target->radius, target->red, target->green, target->blue, target->alpha);
+				filledCircleRGBA(renderer, target->x, target->y, target->radius, target->red, target->green, target->blue, target ->alpha);
+				//circleRGBA(renderer, target->x, target->y, target->radius, target->red, target->green, target->blue, target->alpha);
 				moveCircle(target);
 			}
 		}
 		//Update the screen
 		SDL_RenderPresent(renderer);
-		SDL_Delay(10);
+		//SDL_Delay(10);
 	}
 
 	cleanup( renderer, window);
