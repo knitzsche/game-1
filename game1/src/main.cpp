@@ -12,8 +12,8 @@
 #include "cleanup.h"
 
 using namespace std;
-const int SCREEN_WIDTH  = 640;
-const int SCREEN_HEIGHT = 480;
+const int SCREEN_WIDTH  = 1280;
+const int SCREEN_HEIGHT = 720;
 
 /*
  * Log an SDL error with some error message to the output stream of our choice
@@ -78,11 +78,11 @@ void addCirclePrevious(std::shared_ptr<std::vector<std::shared_ptr<Circle>>> cs,
 	std::shared_ptr<Circle> c = std::make_shared<Circle>();
 	c->x = gun->x;
 	//factor down
-	c->prevX = gun->x - ((gun->x - x)/3);
+	c->prevX = gun->x - ((gun->x - x)/2);
 	c->y = gun->y;
 	//factor down 
-	c->prevY = gun->y - ((gun->y - y)/3);
-	c->r = 5;
+	c->prevY = gun->y - ((gun->y - y)/2);
+	c->r = 2;
 	cs->emplace_back(c);
 } 
 
@@ -146,7 +146,7 @@ bool hit(std::shared_ptr<Circle> b, std::shared_ptr<Target> t) {
 
 std::shared_ptr<Target> makeTarget(){
 	std::shared_ptr<Target> target = std::make_shared<Target>();
-	target->x = 400;
+	target->x = SCREEN_WIDTH-80;
 	target->y = 10;
 	target->radius = 20;
 	target->red = 20;
@@ -162,6 +162,7 @@ struct RGB {
 	int b;
 	int a;
 };
+
 int main(int, char**){
 	//Start up SDL and make sure it went ok
 	if (SDL_Init(SDL_INIT_VIDEO) != 0){
@@ -176,7 +177,7 @@ int main(int, char**){
 	flash.r = 50; flash.g = 50; flash.b = 50; flash.a = 255;
 
 	std::shared_ptr<Gun> gun = std::make_shared<Gun>();
-	gun->x = 80;
+	gun->x = 200;
 	gun->y = 100;
 
 	// make a target
@@ -219,19 +220,6 @@ int main(int, char**){
 	bool isFlash = false;
 	int flashCount = -1;
 	while (!quit){
-		if (isFlash) { 
-			flashCount++;
-			if (flashCount >= 30) {
-				flashCount = -1;
-				isFlash=false;
-				target = makeTarget();
-			}
-			int result = filledCircleColor(renderer, target->x, target->y, target->radius, 0xAAAAAAFF);
-			//Update the screen
-			SDL_RenderPresent(renderer);
-			SDL_Delay(30);
-			continue;
-		}
 		SDL_SetRenderDrawColor( renderer, bg.r, bg.g, bg.b, 255 );
 		SDL_RenderClear(renderer);
 		while (SDL_PollEvent(&e)){
@@ -274,25 +262,36 @@ int main(int, char**){
 			moveCircleTrajectory(c);
 
 		}
+
 		// render target
-		bool isHit;
-		isHit = false;
-		for (auto &c : *circles){
-			if (hit(c, target)) {
-				isHit = true;
+		if (isFlash) { 
+			flashCount++;
+			if (flashCount >= 30) {
+				flashCount = -1;
+				isFlash=false;
+				target = makeTarget();
+			}
+			
+			int result = filledCircleColor(renderer, target->x, target->y, target->radius, 0xFFFF0000);
+		} else {
+			bool isHit;
+			isHit = false;
+			for (auto &c : *circles){
+				if (hit(c, target)) {
+					isHit = true;
+				}
+			}
+			if (isHit) {
+				isFlash = true;
+				std::cout << " a HIT!" << std::endl;
+			} else {
+				circleRGBA(renderer, target->x, target->y, target->radius, target->red, target->green, target->blue, target->alpha);
+				moveCircle(target);
 			}
 		}
-		if (isHit) {
-			isFlash = true;
-			std::cout << " a HIT!" << std::endl;
-		} else {
-			circleRGBA(renderer, target->x, target->y, target->radius, target->red, target->green, target->blue, target->alpha);
-			moveCircle(target);
-		}
-
 		//Update the screen
 		SDL_RenderPresent(renderer);
-		SDL_Delay(30);
+		SDL_Delay(10);
 	}
 
 	cleanup( renderer, window);
