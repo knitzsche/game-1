@@ -56,15 +56,26 @@ struct Gun {
 	int y;
 };
 
+struct Target {
+	int x;
+	int y;
+	int radius;
+	int red;
+	int green;
+	int blue;
+	int alpha;
+};
+
+
 void addCirclePrevious(std::shared_ptr<std::vector<std::shared_ptr<Circle>>> cs, std::shared_ptr<Gun> gun, int x, int y) {
 
 	std::shared_ptr<Circle> c = std::make_shared<Circle>();
 	c->x = gun->x;
 	//factor down
-	c->prevX = gun->x - ((gun->x - x)/2);
+	c->prevX = gun->x - ((gun->x - x)/3);
 	c->y = gun->y;
 	//factor down 
-	c->prevY = gun->y - ((gun->y - y)/2);
+	c->prevY = gun->y - ((gun->y - y)/3);
 	c->r = 5;
 	cs->emplace_back(c);
 } 
@@ -75,9 +86,8 @@ void moveRectangle(std::shared_ptr<SDL_Rect> r) {
 	r->y = r->y+2;
 }
 
-void moveCircle(std::shared_ptr<Circle> c) {
-	c->x = c->x+2;
-	c->y = c->y+2;
+void moveCircle(std::shared_ptr<Target> t) {
+	t->y = t->y+2;
 }
 
 void moveCircleTrajectory(std::shared_ptr<Circle> c) {
@@ -109,6 +119,15 @@ int main(int, char**){
 	std::shared_ptr<Gun> gun = std::make_shared<Gun>();
 	gun->x = 80;
 	gun->y = 100;
+
+	std::shared_ptr<Target> target = std::make_shared<Target>();
+	target->x = 400;
+	target->y = 10;
+	target->radius = 20;
+	target->red = 20;
+	target->green = 20;
+	target->blue = 200;
+	target->alpha = 255;
 
 	//Setup our window and renderer, this time let's put our window in the center
 	//of the screen
@@ -175,18 +194,23 @@ int main(int, char**){
 			}
 		}
 
+		// render gun
 		SDL_SetRenderDrawColor( renderer, 200, 100, 200, 255 );
 		SDL_RenderDrawLine(renderer, mx, my, gun->x, gun ->y);
 
+		// render target
+		circleRGBA(renderer, target->x, target->y, target->radius, target->red, target->green, target->blue, target->alpha);
+		moveCircle(target);
+
 		SDL_SetRenderDrawColor( renderer, 200, 0, 200, 255 );
 		for( std::shared_ptr<SDL_Rect> &r : *rects ) {
-			moveRectangle(r);
 			SDL_RenderFillRect( renderer, r.get() );
+			moveRectangle(r);
 		}
 		SDL_SetRenderDrawColor( renderer, 200, 200, 0, 255 );
 		for( std::shared_ptr<Circle> &c : *circles ) {
-			moveCircleTrajectory(c);
 			int result = filledCircleColor(renderer, c->x, c->y, c->r, 0xFF0000FF);
+			moveCircleTrajectory(c);
 
 		}
 		//rect.x++;
