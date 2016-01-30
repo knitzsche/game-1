@@ -60,9 +60,11 @@ void addCirclePrevious(std::shared_ptr<std::vector<std::shared_ptr<Circle>>> cs,
 
 	std::shared_ptr<Circle> c = std::make_shared<Circle>();
 	c->x = gun->x;
-	c->prevX = c->x-5;
+	//factor down
+	c->prevX = gun->x - ((gun->x - x)/2);
 	c->y = gun->y;
-	c->prevY = y;
+	//factor down 
+	c->prevY = gun->y - ((gun->y - y)/2);
 	c->r = 5;
 	cs->emplace_back(c);
 } 
@@ -147,7 +149,10 @@ int main(int, char**){
 
 	SDL_Event e;
 	bool quit = false;
+	int mx; int my;
 	while (!quit){
+		SDL_SetRenderDrawColor( renderer, 20, 20, 20, 255 );
+		SDL_RenderClear(renderer);
 		while (SDL_PollEvent(&e)){
 			// user closes the window
 			if (e.type == SDL_QUIT){
@@ -163,10 +168,15 @@ int main(int, char**){
 				//addCircle(circles);
 				addCirclePrevious(circles, gun, e.button.x, e.button.y);
 			}
+			if (e.type == SDL_MOUSEMOTION){
+				//std::cout << " MOUSE MOTION. x: " << e.motion.x << std::endl;
+				mx = e.motion.x; my = e.motion.y;
+				//std::cout << " MM res: " << res << std::endl;
+			}
 		}
 
-		SDL_SetRenderDrawColor( renderer, 20, 20, 20, 255 );
-		SDL_RenderClear(renderer);
+		SDL_SetRenderDrawColor( renderer, 200, 100, 200, 255 );
+		SDL_RenderDrawLine(renderer, mx, my, gun->x, gun ->y);
 
 		SDL_SetRenderDrawColor( renderer, 200, 0, 200, 255 );
 		for( std::shared_ptr<SDL_Rect> &r : *rects ) {
@@ -179,9 +189,9 @@ int main(int, char**){
 			int result = filledCircleColor(renderer, c->x, c->y, c->r, 0xFF0000FF);
 
 		}
-		rect.x++;
-		rect.y++;
-		SDL_RenderFillRect( renderer, &rect );
+		//rect.x++;
+		//rect.y++;
+		//SDL_RenderFillRect( renderer, &rect );
 
 		//Update the screen
 		SDL_RenderPresent(renderer);
