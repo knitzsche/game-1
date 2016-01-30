@@ -2,13 +2,16 @@
 #include <vector>
 #include <memory>
 #include <iostream>
+#include <math.h>
+#include <cmath>
+
 #include <SDL.h>
 #include <SDL_image.h>
 #include <SDL2_gfxPrimitives.h> //install libsdl2-gfx-dev
 #include "res_path.h"
 #include "cleanup.h"
 
-
+using namespace std;
 const int SCREEN_WIDTH  = 640;
 const int SCREEN_HEIGHT = 480;
 
@@ -32,21 +35,24 @@ void addRect(std::shared_ptr<std::vector<std::shared_ptr<SDL_Rect>>> rs) {
 } 
 
 struct Circle {
+	int initX= 20;
+	int initPrevX = 0;
+	int initY = 80;
+	int initPrevY = 105;
 	int x;
 	int prevX;
 	int y;
 	int prevY;
-	int r; // radius
+	int r = 20; // radius
 };
 
 void addCircle(std::shared_ptr<std::vector<std::shared_ptr<Circle>>> cs) {
 
 	std::shared_ptr<Circle> c = std::make_shared<Circle>();
-	c->x = 20;
-	c->prevX = 0;
-	c->y = 80;
-	c->prevY = 105;
-	c->r = 5;
+	c->x = c->initX;
+	c->prevX = c->initPrevX;
+	c->y = c->initY;
+	c->prevY = c->initPrevY;
 	cs->emplace_back(c);
 } 
 
@@ -86,8 +92,19 @@ void moveRectangle(std::shared_ptr<SDL_Rect> r) {
 	r->y = r->y+2;
 }
 
+void wrap(shared_ptr<Target> t) {
+	if (t->x > SCREEN_WIDTH) {
+		t->x = 0;
+	}
+	if (t->y > SCREEN_HEIGHT) {
+		t->y = 0;//TODO reconsider
+	}
+
+}
+
 void moveCircle(std::shared_ptr<Target> t) {
 	t->y = t->y+2;
+	wrap(t);
 }
 
 void moveCircleTrajectory(std::shared_ptr<Circle> c) {
@@ -109,6 +126,35 @@ void moveCircleTrajectory(std::shared_ptr<Circle> c) {
 	return;
 }
 
+bool hit(std::shared_ptr<Circle> b, std::shared_ptr<Target> t) {
+	int x; int y; int d;
+	x = abs(b->x - t->x);
+	y = abs(b->y - t->y);
+	d = sqrt(pow(x,2) + pow(y,2));
+	//cout << "x: " << x << endl;
+	//cout << "y: " << y << endl;
+	//cout << "d: " << d << endl;
+	if (d > t->radius) {
+		return false;
+	} else {
+		//cout << "HIT. r: " << t->radius << endl;		
+		//cout << "HIT. d: " << d << endl;		
+		cout << "=== HIT" << endl;		
+		return true;
+	}
+}
+
+std::shared_ptr<Target> makeTarget(){
+	std::shared_ptr<Target> target = std::make_shared<Target>();
+	target->x = 400;
+	target->y = 10;
+	target->radius = 20;
+	target->red = 20;
+	target->green = 20;
+	target->blue = 200;
+	target->alpha = 255;
+	return target;
+}
 int main(int, char**){
 	//Start up SDL and make sure it went ok
 	if (SDL_Init(SDL_INIT_VIDEO) != 0){
@@ -120,14 +166,9 @@ int main(int, char**){
 	gun->x = 80;
 	gun->y = 100;
 
-	std::shared_ptr<Target> target = std::make_shared<Target>();
-	target->x = 400;
-	target->y = 10;
-	target->radius = 20;
-	target->red = 20;
-	target->green = 20;
-	target->blue = 200;
-	target->alpha = 255;
+	// make a target
+	std::shared_ptr<Target> target;
+	target = makeTarget();
 
 	//Setup our window and renderer, this time let's put our window in the center
 	//of the screen
@@ -152,13 +193,6 @@ int main(int, char**){
 		SDL_Quit();
 		return 1;
 	}
-
-	// a rect
-	SDL_Rect rect;
-	rect.x = 0;
-	rect.y = 0;
-	rect.w = 32;
-	rect.h = 32;
 
 	// vector of dynamically created resctangles
 	std::shared_ptr<std::vector<std::shared_ptr<SDL_Rect>>> rects = std::make_shared<std::vector<std::shared_ptr<SDL_Rect>>>();
@@ -198,27 +232,39 @@ int main(int, char**){
 		SDL_SetRenderDrawColor( renderer, 200, 100, 200, 255 );
 		SDL_RenderDrawLine(renderer, mx, my, gun->x, gun ->y);
 
-		// render target
-		circleRGBA(renderer, target->x, target->y, target->radius, target->red, target->green, target->blue, target->alpha);
-		moveCircle(target);
-
+/*
 		SDL_SetRenderDrawColor( renderer, 200, 0, 200, 255 );
 		for( std::shared_ptr<SDL_Rect> &r : *rects ) {
 			SDL_RenderFillRect( renderer, r.get() );
 			moveRectangle(r);
 		}
+*/
+		//Render bullet
 		SDL_SetRenderDrawColor( renderer, 200, 200, 0, 255 );
 		for( std::shared_ptr<Circle> &c : *circles ) {
 			int result = filledCircleColor(renderer, c->x, c->y, c->r, 0xFF0000FF);
 			moveCircleTrajectory(c);
 
 		}
-		//rect.x++;
-		//rect.y++;
-		//SDL_RenderFillRect( renderer, &rect );
+		// render target
+		bool isHit;
+		isHit = false;
+		for (auto &c : *circles){
+			if (hit(c, target)) {
+				isHit = true;
+			}
+		}
+		if (isHit) {
+			std::cout << " a HIT!" << std::endl;
+			target = makeTarget();
+		} else {
+			circleRGBA(renderer, target->x, target->y, target->radius, target->red, target->green, target->blue, target->alpha);
+			moveCircle(target);
+		}
 
 		//Update the screen
 		SDL_RenderPresent(renderer);
+
 	}
 
 	cleanup( renderer, window);
