@@ -155,12 +155,25 @@ std::shared_ptr<Target> makeTarget(){
 	target->alpha = 255;
 	return target;
 }
+
+struct RGB {
+	int r;
+	int g;
+	int b;
+	int a;
+};
 int main(int, char**){
 	//Start up SDL and make sure it went ok
 	if (SDL_Init(SDL_INIT_VIDEO) != 0){
 		logSDLError(std::cout, "SDL_Init");
 		return 1;
 	}
+
+	RGB bg;
+	bg.r = 20; bg.g = 20; bg.b = 20; bg.a = 255;
+
+	RGB flash;
+	flash.r = 50; flash.g = 50; flash.b = 50; flash.a = 255;
 
 	std::shared_ptr<Gun> gun = std::make_shared<Gun>();
 	gun->x = 80;
@@ -203,8 +216,23 @@ int main(int, char**){
 	SDL_Event e;
 	bool quit = false;
 	int mx; int my;
+	bool isFlash = false;
+	int flashCount = -1;
 	while (!quit){
-		SDL_SetRenderDrawColor( renderer, 20, 20, 20, 255 );
+		if (isFlash) { 
+			flashCount++;
+			if (flashCount >= 30) {
+				flashCount = -1;
+				isFlash=false;
+				target = makeTarget();
+			}
+			int result = filledCircleColor(renderer, target->x, target->y, target->radius, 0xAAAAAAFF);
+			//Update the screen
+			SDL_RenderPresent(renderer);
+			SDL_Delay(30);
+			continue;
+		}
+		SDL_SetRenderDrawColor( renderer, bg.r, bg.g, bg.b, 255 );
 		SDL_RenderClear(renderer);
 		while (SDL_PollEvent(&e)){
 			// user closes the window
@@ -255,8 +283,8 @@ int main(int, char**){
 			}
 		}
 		if (isHit) {
+			isFlash = true;
 			std::cout << " a HIT!" << std::endl;
-			target = makeTarget();
 		} else {
 			circleRGBA(renderer, target->x, target->y, target->radius, target->red, target->green, target->blue, target->alpha);
 			moveCircle(target);
@@ -264,7 +292,7 @@ int main(int, char**){
 
 		//Update the screen
 		SDL_RenderPresent(renderer);
-
+		SDL_Delay(30);
 	}
 
 	cleanup( renderer, window);
