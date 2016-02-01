@@ -238,10 +238,10 @@ int main(int, char**){
 
 	SDL_Event e;
 	bool quit = false;
-	int mx; int my;
+	int mx = gun->x - 40; int my = gun->y + 40;
 	bool isFlash = false;
 	int flashCount = -1;
-	bool move = true;
+	int move = -1;
 	while (!quit){
 		SDL_SetRenderDrawColor( renderer, bg.r, bg.g, bg.b, 255 );
 		SDL_RenderClear(renderer);
@@ -250,29 +250,46 @@ int main(int, char**){
 			if (e.type == SDL_QUIT){
 				quit = true;
 			}
-			// user presses any key
-			if (e.type == SDL_KEYDOWN){
-				quit = true;
-			}
 			// user clicks the mouse
 			if (e.type == SDL_MOUSEBUTTONDOWN){
 				//addRect(rects);
 				//addCircle(circles);
 				addCirclePrevious(circles, gun, e.button.x, e.button.y);
 			}
+			// user presses any key
+			if (e.type == SDL_KEYDOWN){
+				int amt = 8;
+				//cout << "key: " << SDL_GetKeyName(e.key.keysym.sym) << endl;
+				if (e.key.keysym.scancode == SDL_SCANCODE_LEFT) {
+					mx -= amt;
+				} else if (e.key.keysym.scancode == SDL_SCANCODE_RIGHT) {
+					mx += amt;
+				} else if (e.key.keysym.scancode == SDL_SCANCODE_UP) {
+					my -= amt;
+				} else if (e.key.keysym.scancode == SDL_SCANCODE_DOWN) {
+					my += amt;
+				} else if (e.key.keysym.scancode == SDL_SCANCODE_SPACE) {
+					addCirclePrevious(circles, gun, mx, my);
+				}
+			}
+			/*
 			if (e.type == SDL_MOUSEMOTION){
 				//std::cout << " MOUSE MOTION. x: " << e.motion.x << std::endl;
 				mx = e.motion.x; my = e.motion.y;
 				//std::cout << " MM res: " << res << std::endl;
 			}
+			*/
 		}
 
 		// render gun
 		SDL_SetRenderDrawColor( renderer, 200, 100, 200, 255 );
 		SDL_RenderDrawLine(renderer, mx, my, gun->x, gun ->y);
+		filledCircleRGBA(renderer, gun->x, gun->y, 10, 200, 10, 10, target ->alpha);
 
 		//Render bullets
-		if (move) { // every other loop iter
+		move++;
+		if (move = 3) { // every other loop iter
+		move = -1;
 			SDL_SetRenderDrawColor( renderer, 200, 200, 0, 255 );
 			shared_ptr<vector<shared_ptr<Circle>>> newCircles = make_shared<vector<shared_ptr<Circle>>>(); 
 			for( std::shared_ptr<Circle> &c : *circles ) {
@@ -284,7 +301,6 @@ int main(int, char**){
 			}
 			circles = newCircles;
 		}
-		move = !move;
 
 		// render target
 		if (isFlash) { 
@@ -306,7 +322,7 @@ int main(int, char**){
 			}
 			if (isHit) {
 				isFlash = true;
-				std::cout << " a HIT!" << std::endl;
+				//std::cout << " a HIT!" << std::endl;
 			} else {
 				filledCircleRGBA(renderer, target->x, target->y, target->radius, target->red, target->green, target->blue, target ->alpha);
 				//circleRGBA(renderer, target->x, target->y, target->radius, target->red, target->green, target->blue, target->alpha);
