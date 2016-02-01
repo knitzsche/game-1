@@ -43,7 +43,7 @@ struct Circle {
 	double prevX;
 	double y;
 	double prevY;
-	int r = 30; // radius
+	int r = 5; // radius
 };
 
 void addCircle(std::shared_ptr<std::vector<std::shared_ptr<Circle>>> cs) {
@@ -81,7 +81,6 @@ void addCirclePrevious(std::shared_ptr<std::vector<std::shared_ptr<Circle>>> cs,
 	c->y = gun->y;
 	//factor down 
 	c->prevY = gun->y - ((gun->y - y)/4);
-	c->r = 2;
 	cs->emplace_back(c);
 } 
 
@@ -113,7 +112,7 @@ struct Position {
 	double prevY;
 };
 
-Position getPosition(shared_ptr<Circle> c) {
+Position getNextPosition(shared_ptr<Circle> c) {
 	Position p;
 	int g = 9.8;
  	int t = 1;
@@ -129,13 +128,12 @@ Position getPosition(shared_ptr<Circle> c) {
 	p.y = c->y + deltaY;
 	// TODO wrap if needed
 	return p;
-
 }
 
 
 void moveCircleTrajectory(std::shared_ptr<Circle> c) {
 	Position p;
-	p = getPosition(c);
+	p = getNextPosition(c);
 	c->x = p.x;
 	c->y = p.y;
 	c->prevX = p.prevX;
@@ -145,6 +143,16 @@ void moveCircleTrajectory(std::shared_ptr<Circle> c) {
 
 bool hit(std::shared_ptr<Circle> b, std::shared_ptr<Target> t) {
 
+
+	//see if bullet is inside square around target
+	double halfR = t->radius/2;
+	if (b->x > t->x - halfR && 
+		b->x < t->x + halfR &&
+		b->y > t->y - halfR &&
+		b->y < t->y + halfR ) 
+		return true;
+	
+	Position nextP = getNextPosition(b);
 
 
 	// this only checks current pos. I need to check pos between
@@ -164,9 +172,7 @@ bool hit(std::shared_ptr<Circle> b, std::shared_ptr<Target> t) {
 	//cout << "dofb: " << dofB << endl;
 	numPoints = dofB/t->radius;
 	for (int i = numPoints; i >0; i--) {
-
 		
-
 		int x; int y; int d;
 		x = abs(b->x - t->x);
 		y = abs(b->y - t->y);
