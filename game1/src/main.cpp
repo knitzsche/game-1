@@ -105,22 +105,41 @@ void moveCircle(std::shared_ptr<Target> t) {
 	wrap(t);
 }
 
-void moveCircleTrajectory(std::shared_ptr<Circle> c) {
+
+struct Position {
+	double x;
+	double prevX;
+	double y;
+	double prevY;
+};
+
+Position getPosition(shared_ptr<Circle> c) {
+	Position p;
 	int g = 9.8;
  	int t = 1;
 	double velocy = c->y - c->prevY;
-
 	//int deltaY; deltaY =int((velocy) + (0.5 * g));
 	double deltaY = velocy + 0.5;
 	double projY = c->y + deltaY;
 	double deltaX = c->x - c->prevX;
-
 	//# set the new position
-	c->prevX = c->x;
-	c->prevY = c->y;
-	c->x = c->x + deltaX;
-	c->y = c->y + deltaY;
+	p.prevX = c->x;
+	p.prevY = c->y;
+	p.x = c->x + deltaX;
+	p.y = c->y + deltaY;
 	// TODO wrap if needed
+	return p;
+
+}
+
+
+void moveCircleTrajectory(std::shared_ptr<Circle> c) {
+	Position p;
+	p = getPosition(c);
+	c->x = p.x;
+	c->y = p.y;
+	c->prevX = p.prevX;
+	c->prevY = p.prevY;
 	return;
 }
 
@@ -270,6 +289,8 @@ int main(int, char**){
 					my += amt;
 				} else if (e.key.keysym.scancode == SDL_SCANCODE_SPACE) {
 					addCirclePrevious(circles, gun, mx, my);
+				} else if (e.key.keysym.scancode == SDL_SCANCODE_ESCAPE) {
+					quit = true;
 				}
 			}
 			/*
