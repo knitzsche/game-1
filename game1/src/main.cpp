@@ -39,6 +39,13 @@ struct Position {
 	double y;
 };
 
+struct RGB {
+	int r;
+	int g;
+	int b;
+	int a;
+};
+
 struct Circle {
 	double initX= 20;
 	double initPrevX = 0;
@@ -48,6 +55,7 @@ struct Circle {
 	Position prevP;
 	double prevY;
 	int r = 5; // radius
+	RGB rgb;
 };
 
 void addCircle(std::shared_ptr<std::vector<std::shared_ptr<Circle>>> cs) {
@@ -84,6 +92,10 @@ void addCirclePrevious(std::shared_ptr<std::vector<std::shared_ptr<Circle>>> cs,
 	c->p.y = gun->y;
 	//factor down 
 	c->prevP.y = gun->y - ((gun->y - y)/4);
+	c->rgb.b = 200;
+	c->rgb.g = 20;
+	c->rgb.r = 20;
+	c->rgb.a = 255;
 	cs->emplace_back(c);
 } 
 
@@ -200,13 +212,6 @@ std::shared_ptr<Target> makeTarget(){
 	return target;
 }
 
-struct RGB {
-	int r;
-	int g;
-	int b;
-	int a;
-};
-
 int main(int, char**){
 	//Start up SDL and make sure it went ok
 	if (SDL_Init(SDL_INIT_VIDEO) != 0){
@@ -314,9 +319,9 @@ int main(int, char**){
 		move++;
 		if (move = 3) { // every other loop iter
 		move = -1;
-			SDL_SetRenderDrawColor( renderer, 200, 200, 0, 255 );
 			shared_ptr<vector<shared_ptr<Circle>>> newCircles = make_shared<vector<shared_ptr<Circle>>>(); 
 			for( std::shared_ptr<Circle> &c : *circles ) {
+				SDL_SetRenderDrawColor( renderer, c->rgb.b, c->rgb.g, c->rgb.r, c->rgb.a);
 				int result = filledCircleColor(renderer, c->p.x, c->p.y, c->r, 0xFF0000FF);
 				moveCircleTrajectory(c);
 				if (c->p.x < SCREEN_WIDTH && c->p.x > 0 && c->p.y < SCREEN_HEIGHT && c->p.y > 0 ){
