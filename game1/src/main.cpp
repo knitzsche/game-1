@@ -34,14 +34,18 @@ void addRect(std::shared_ptr<std::vector<std::shared_ptr<SDL_Rect>>> rs) {
 	rs->emplace_back(r);
 } 
 
+struct Position {
+	double x;
+	double y;
+};
+
 struct Circle {
 	double initX= 20;
 	double initPrevX = 0;
 	double initY = 80;
 	double initPrevY = 105;
-	double x;
-	double prevX;
-	double y;
+	Position p;
+	Position prevP;
 	double prevY;
 	int r = 5; // radius
 };
@@ -49,13 +53,12 @@ struct Circle {
 void addCircle(std::shared_ptr<std::vector<std::shared_ptr<Circle>>> cs) {
 
 	std::shared_ptr<Circle> c = std::make_shared<Circle>();
-	c->x = c->initX;
-	c->prevX = c->initPrevX;
-	c->y = c->initY;
-	c->prevY = c->initPrevY;
+	c->p.x = c->initX;
+	c->prevP.x = c->initPrevX;
+	c->p.y = c->initY;
+	c->prevP.y = c->initPrevY;
 	cs->emplace_back(c);
 } 
-
 
 struct Gun {
 	int x;
@@ -75,19 +78,14 @@ struct Target {
 void addCirclePrevious(std::shared_ptr<std::vector<std::shared_ptr<Circle>>> cs, std::shared_ptr<Gun> gun, double x, double y) {
 
 	std::shared_ptr<Circle> c = std::make_shared<Circle>();
-	c->x = gun->x;
+	c->p.x = gun->x;
 	//factor down
-	c->prevX = gun->x - ((gun->x - x)/4);
-	c->y = gun->y;
+	c->prevP.x = gun->x - ((gun->x - x)/4);
+	c->p.y = gun->y;
 	//factor down 
-	c->prevY = gun->y - ((gun->y - y)/4);
+	c->prevP.y = gun->y - ((gun->y - y)/4);
 	cs->emplace_back(c);
 } 
-
-void moveRectangle(std::shared_ptr<SDL_Rect> r) {
-	r->x = r->x+2;
-	r->y = r->y+2;
-}
 
 void wrap(shared_ptr<Target> t) {
 	if (t->x > SCREEN_WIDTH) {
@@ -96,7 +94,6 @@ void wrap(shared_ptr<Target> t) {
 	if (t->y > SCREEN_HEIGHT) {
 		t->y = 0;//TODO reconsider
 	}
-
 }
 
 void moveCircle(std::shared_ptr<Target> t) {
@@ -104,55 +101,56 @@ void moveCircle(std::shared_ptr<Target> t) {
 	wrap(t);
 }
 
-
-struct Position {
-	double x;
-	double prevX;
-	double y;
-	double prevY;
-};
-
-Position getNextPosition(shared_ptr<Circle> c) {
-	Position p;
-	int g = 9.8;
- 	int t = 1;
-	double velocy = c->y - c->prevY;
-	//int deltaY; deltaY =int((velocy) + (0.5 * g));
-	double deltaY = velocy + 0.5;
-	double projY = c->y + deltaY;
-	double deltaX = c->x - c->prevX;
-	//# set the new position
-	p.prevX = c->x;
-	p.prevY = c->y;
-	p.x = c->x + deltaX;
-	p.y = c->y + deltaY;
-	// TODO wrap if needed
-	return p;
+double getDistanceMove(shared_ptr<Circle> c) {
+	return sqrt(pow((c->p.x - c->prevP.x), 2) + pow((c->p.y - c->prevP.y), 2));
 }
 
+pair<Position, Position> getNextPosition(shared_ptr<Circle> c) {
+	Position p;
+	Position prevP;
+	int g = 9.8;
+ 	int t = 1;
+	double velocy = c->p.y - c->prevP.y;
+	//int deltaY; deltaY =int((velocy) + (0.5 * g));
+	double deltaY = velocy + 0.5;
+	double projY = c->p.y + deltaY;
+	double deltaX = c->p.x - c->prevP.x;
+	//# set the new position
+	prevP.x = c->p.x;
+	prevP.y = c->p.y;
+	p.x = c->p.x + deltaX;
+	p.y = c->p.y + deltaY;
+	
+	pair<Position, Position> ps (p, prevP);
+	// TODO wrap if needed
+	return ps;
+}
 
 void moveCircleTrajectory(std::shared_ptr<Circle> c) {
+	double distance = getDistanceMove(c);
+	cout << "Distance: " << distance<< endl;
 	Position p;
-	p = getNextPosition(c);
-	c->x = p.x;
-	c->y = p.y;
-	c->prevX = p.prevX;
-	c->prevY = p.prevY;
+	pair<Position, Position> ps = getNextPosition(c);
+	c->p.x = ps.first.x;
+	c->p.y = ps.first.y;
+	c->prevP.x = ps.second.x;
+	c->prevP.y = ps.second.y;
 	return;
 }
 
 bool hit(std::shared_ptr<Circle> b, std::shared_ptr<Target> t) {
 
-
 	//see if bullet is inside square around target
 	double halfR = t->radius/2;
-	if (b->x > t->x - halfR && 
-		b->x < t->x + halfR &&
-		b->y > t->y - halfR &&
-		b->y < t->y + halfR ) 
+	if (b->p.x > t->x - halfR && 
+		b->p.x < t->x + halfR &&
+		b->p.y > t->y - halfR &&
+		b->p.y < t->y + halfR ) {
+
 		return true;
+	}
 	
-	Position nextP = getNextPosition(b);
+	//Position nextP = getNextPosition(b);
 
 
 	// this only checks current pos. I need to check pos between
@@ -166,16 +164,15 @@ bool hit(std::shared_ptr<Circle> b, std::shared_ptr<Target> t) {
 	int deltaXofB;
 	int deltaYofB;
 	int numPoints;
-	deltaXofB = abs(b->x - b->prevX);
-	deltaYofB = abs(b->y - b->prevY);
+	deltaXofB = abs(b->p.x - b->prevP.x);
+	deltaYofB = abs(b->p.y - b->prevP.y);
 	dofB = sqrt(pow(deltaXofB,2) + pow(deltaYofB,2));
 	//cout << "dofb: " << dofB << endl;
 	numPoints = dofB/t->radius;
 	for (int i = numPoints; i >0; i--) {
-		
 		int x; int y; int d;
-		x = abs(b->x - t->x);
-		y = abs(b->y - t->y);
+		x = abs(b->p.x - t->x);
+		y = abs(b->p.y - t->y);
 		d = sqrt(pow(x,2) + pow(y,2));
 		//cout << "x: " << x << endl;
 		//cout << "y: " << y << endl;
@@ -320,9 +317,9 @@ int main(int, char**){
 			SDL_SetRenderDrawColor( renderer, 200, 200, 0, 255 );
 			shared_ptr<vector<shared_ptr<Circle>>> newCircles = make_shared<vector<shared_ptr<Circle>>>(); 
 			for( std::shared_ptr<Circle> &c : *circles ) {
-				int result = filledCircleColor(renderer, c->x, c->y, c->r, 0xFF0000FF);
+				int result = filledCircleColor(renderer, c->p.x, c->p.y, c->r, 0xFF0000FF);
 				moveCircleTrajectory(c);
-				if (c->x < SCREEN_WIDTH && c->x > 0 && c->y < SCREEN_HEIGHT && c->y > 0 ){
+				if (c->p.x < SCREEN_WIDTH && c->p.x > 0 && c->p.y < SCREEN_HEIGHT && c->p.y > 0 ){
 					newCircles->emplace_back(c); // keep if still on screen
 				}
 			}
