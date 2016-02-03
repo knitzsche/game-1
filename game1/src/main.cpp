@@ -68,19 +68,7 @@ struct Gun {
 	int x;
 	int y;
 };
-/*
-struct Target {
-	Position p;
-	Position prevP;
-	//int x;
-	//int y;
-	int radius;
-	int red;
-	int green;
-	int blue;
-	int alpha;
-};
-*/
+
 void addCirclePrevious(std::shared_ptr<std::vector<std::shared_ptr<Circle>>> cs, std::shared_ptr<Gun> gun, double x, double y) {
 
 	std::shared_ptr<Circle> c = std::make_shared<Circle>();
@@ -90,9 +78,9 @@ void addCirclePrevious(std::shared_ptr<std::vector<std::shared_ptr<Circle>>> cs,
 	c->p.y = gun->y;
 	//factor down 
 	c->prevP.y = gun->y - ((gun->y - y)/4);
-	c->rgb.b = 200;
+	c->rgb.b = 20;
 	c->rgb.g = 20;
-	c->rgb.r = 20;
+	c->rgb.r = 200;
 	c->rgb.a = 255;
 	cs->emplace_back(c);
 } 
@@ -163,7 +151,6 @@ bool hit(std::shared_ptr<Circle> b, std::shared_ptr<Circle> t) {
 	
 	//Position nextP = getNextPosition(b);
 
-
 	// a = ( Vab * Vab )
 	// b = 2 (Pab * Vab)
 	// c = Pab * Pab - (Ra -Rb ) ^ 2
@@ -173,11 +160,6 @@ bool hit(std::shared_ptr<Circle> b, std::shared_ptr<Circle> t) {
 	//double 
 
 	//a = inner
-
-
-
-	
-
 
 	// this only checks current pos. I need to check pos between
 	// current and previous. one for each distance diameter of target
@@ -330,20 +312,23 @@ int main(int, char**){
 		filledCircleRGBA(renderer, gun->x, gun->y, 10, 200, 10, 10, target->rgb.a);
 
 		//Render bullets
-		move++;
-		if (move = 3) { // every other loop iter
-		move = -1;
+	//	move++;
+	//	if (move == 1) { // every other loop iter
+	//		move = -1;
 			shared_ptr<vector<shared_ptr<Circle>>> newCircles = make_shared<vector<shared_ptr<Circle>>>(); 
 			for( std::shared_ptr<Circle> &c : *circles ) {
 				SDL_SetRenderDrawColor( renderer, c->rgb.b, c->rgb.g, c->rgb.r, c->rgb.a);
-				int result = filledCircleColor(renderer, c->p.x, c->p.y, c->r, 0xFF0000FF);
+				
+				int res = filledCircleRGBA(renderer, c->p.x, c->p.y, c->r, c->rgb.r, c->rgb.g, c->rgb.b, c->rgb.a);
+				if (res == -1) 
+					cout << "=========== ERROR res: " << res << endl;
 				moveCircleTrajectory(c);
 				if (c->p.x < SCREEN_WIDTH && c->p.x > 0 && c->p.y < SCREEN_HEIGHT && c->p.y > 0 ){
 					newCircles->emplace_back(c); // keep if still on screen
 				}
 			}
 			circles = newCircles;
-		}
+	//	}
 
 		// render target
 		if (isFlash) { 
