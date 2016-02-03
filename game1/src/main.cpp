@@ -68,7 +68,7 @@ struct Gun {
 	int x;
 	int y;
 };
-
+/*
 struct Target {
 	Position p;
 	Position prevP;
@@ -80,7 +80,7 @@ struct Target {
 	int blue;
 	int alpha;
 };
-
+*/
 void addCirclePrevious(std::shared_ptr<std::vector<std::shared_ptr<Circle>>> cs, std::shared_ptr<Gun> gun, double x, double y) {
 
 	std::shared_ptr<Circle> c = std::make_shared<Circle>();
@@ -97,7 +97,7 @@ void addCirclePrevious(std::shared_ptr<std::vector<std::shared_ptr<Circle>>> cs,
 	cs->emplace_back(c);
 } 
 
-void wrap(shared_ptr<Target> t) {
+void wrap(shared_ptr<Circle> t) {
 	if (t->p.x > SCREEN_WIDTH) {
 		t->p.x = 0;
 	}
@@ -106,7 +106,7 @@ void wrap(shared_ptr<Target> t) {
 	}
 }
 
-void moveCircle(std::shared_ptr<Target> t) {
+void moveCircle(std::shared_ptr<Circle> t) {
 	t->prevP.y = t->p.y;
 	t->p.y = t->p.y+1;
 	wrap(t);
@@ -149,10 +149,10 @@ void moveCircleTrajectory(std::shared_ptr<Circle> c) {
 	return;
 }
 
-bool hit(std::shared_ptr<Circle> b, std::shared_ptr<Target> t) {
+bool hit(std::shared_ptr<Circle> b, std::shared_ptr<Circle> t) {
 
 	//see if bullet is inside square around target
-	double halfR = t->radius/2;
+	double halfR = t->r/2;
 	if (b->p.x > t->p.x - halfR && 
 		b->p.x < t->p.x + halfR &&
 		b->p.y > t->p.y - halfR &&
@@ -167,6 +167,13 @@ bool hit(std::shared_ptr<Circle> b, std::shared_ptr<Target> t) {
 	// a = ( Vab * Vab )
 	// b = 2 (Pab * Vab)
 	// c = Pab * Pab - (Ra -Rb ) ^ 2
+	
+	//double a; double b; double c;
+
+	//double 
+
+	//a = inner
+
 
 
 	
@@ -187,7 +194,7 @@ bool hit(std::shared_ptr<Circle> b, std::shared_ptr<Target> t) {
 	deltaYofB = abs(b->p.y - b->prevP.y);
 	dofB = sqrt(pow(deltaXofB,2) + pow(deltaYofB,2));
 	//cout << "dofb: " << dofB << endl;
-	numPoints = dofB/t->radius;
+	numPoints = dofB/t->r;
 	for (int i = numPoints; i >0; i--) {
 		int x; int y; int d;
 		x = abs(b->p.x - t->p.x);
@@ -196,7 +203,7 @@ bool hit(std::shared_ptr<Circle> b, std::shared_ptr<Target> t) {
 		//cout << "x: " << x << endl;
 		//cout << "y: " << y << endl;
 		//cout << "d: " << d << endl;
-		if (d > t->radius) {
+		if (d > t->r) {
 			return false;
 		} else {
 			//cout << "HIT. r: " << t->radius << endl;		
@@ -207,15 +214,15 @@ bool hit(std::shared_ptr<Circle> b, std::shared_ptr<Target> t) {
 	} 
 }
 
-std::shared_ptr<Target> makeTarget(){
-	std::shared_ptr<Target> target = std::make_shared<Target>();
+std::shared_ptr<Circle> makeTarget(){
+	std::shared_ptr<Circle> target = std::make_shared<Circle>();
 	target->p.x = SCREEN_WIDTH-80;
 	target->p.y = 10;
-	target->radius = 20;
-	target->red = 20;
-	target->green = 20;
-	target->blue = 200;
-	target->alpha = 255;
+	target->r = 20;
+	target->rgb.r = 20;
+	target->rgb.g = 20;
+	target->rgb.b = 200;
+	target->rgb.a = 255;
 	return target;
 }
 
@@ -237,7 +244,7 @@ int main(int, char**){
 	gun->y = SCREEN_HEIGHT - 200;
 
 	// make a target
-	std::shared_ptr<Target> target;
+	std::shared_ptr<Circle> target;
 	target = makeTarget();
 
 	//Setup our window and renderer, this time let's put our window in the center
@@ -320,7 +327,7 @@ int main(int, char**){
 		// render gun
 		SDL_SetRenderDrawColor( renderer, 200, 100, 200, 255 );
 		SDL_RenderDrawLine(renderer, mx, my, gun->x, gun ->y);
-		filledCircleRGBA(renderer, gun->x, gun->y, 10, 200, 10, 10, target ->alpha);
+		filledCircleRGBA(renderer, gun->x, gun->y, 10, 200, 10, 10, target->rgb.a);
 
 		//Render bullets
 		move++;
@@ -347,7 +354,7 @@ int main(int, char**){
 				target = makeTarget();
 			}
 			
-			filledCircleRGBA(renderer, target->p.x, target->p.y, target->radius, flash.r-100, flash.g-100, flash.b, target ->alpha);
+			filledCircleRGBA(renderer, target->p.x, target->p.y, target->r, flash.r-100, flash.g-100, flash.b, target->rgb.a);
 		} else {
 			bool isHit;
 			isHit = false;
@@ -360,7 +367,7 @@ int main(int, char**){
 				isFlash = true;
 				//std::cout << " a HIT!" << std::endl;
 			} else {
-				filledCircleRGBA(renderer, target->p.x, target->p.y, target->radius, target->red, target->green, target->blue, target ->alpha);
+				filledCircleRGBA(renderer, target->p.x, target->p.y, target->r, target->rgb.r, target->rgb.g, target->rgb.b, target->rgb.a);
 				//circleRGBA(renderer, target->x, target->y, target->radius, target->red, target->green, target->blue, target->alpha);
 			}
 		}
