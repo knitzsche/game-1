@@ -47,10 +47,6 @@ struct RGB {
 };
 
 struct Circle {
-	double initX= 20;
-	double initPrevX = 0;
-	double initY = 80;
-	double initPrevY = 105;
 	Position p;
 	Position prevP;
 	double prevY;
@@ -61,10 +57,10 @@ struct Circle {
 void addCircle(std::shared_ptr<std::vector<std::shared_ptr<Circle>>> cs) {
 
 	std::shared_ptr<Circle> c = std::make_shared<Circle>();
-	c->p.x = c->initX;
-	c->prevP.x = c->initPrevX;
-	c->p.y = c->initY;
-	c->prevP.y = c->initPrevY;
+	c->p.x = 20;
+	c->prevP.x = 0;
+	c->p.y = 80;
+	c->prevP.y = 105;
 	cs->emplace_back(c);
 } 
 
@@ -74,8 +70,10 @@ struct Gun {
 };
 
 struct Target {
-	int x;
-	int y;
+	Position p;
+	Position prevP;
+	//int x;
+	//int y;
 	int radius;
 	int red;
 	int green;
@@ -100,16 +98,17 @@ void addCirclePrevious(std::shared_ptr<std::vector<std::shared_ptr<Circle>>> cs,
 } 
 
 void wrap(shared_ptr<Target> t) {
-	if (t->x > SCREEN_WIDTH) {
-		t->x = 0;
+	if (t->p.x > SCREEN_WIDTH) {
+		t->p.x = 0;
 	}
-	if (t->y > SCREEN_HEIGHT) {
-		t->y = 0;//TODO reconsider
+	if (t->p.y > SCREEN_HEIGHT) {
+		t->p.y = 0;//TODO reconsider
 	}
 }
 
 void moveCircle(std::shared_ptr<Target> t) {
-	t->y = t->y+1;
+	t->prevP.y = t->p.y;
+	t->p.y = t->p.y+1;
 	wrap(t);
 }
 
@@ -140,7 +139,7 @@ pair<Position, Position> getNextPosition(shared_ptr<Circle> c) {
 
 void moveCircleTrajectory(std::shared_ptr<Circle> c) {
 	double distance = getDistanceMove(c);
-	cout << "Distance: " << distance<< endl;
+	cout << "x: " << c->p.x << " y: "<< c->p.y << " Distance: " << distance<< endl;
 	Position p;
 	pair<Position, Position> ps = getNextPosition(c);
 	c->p.x = ps.first.x;
@@ -154,15 +153,23 @@ bool hit(std::shared_ptr<Circle> b, std::shared_ptr<Target> t) {
 
 	//see if bullet is inside square around target
 	double halfR = t->radius/2;
-	if (b->p.x > t->x - halfR && 
-		b->p.x < t->x + halfR &&
-		b->p.y > t->y - halfR &&
-		b->p.y < t->y + halfR ) {
+	if (b->p.x > t->p.x - halfR && 
+		b->p.x < t->p.x + halfR &&
+		b->p.y > t->p.y - halfR &&
+		b->p.y < t->p.y + halfR ) {
 
 		return true;
 	}
 	
 	//Position nextP = getNextPosition(b);
+
+
+	// a = ( Vab * Vab )
+	// b = 2 (Pab * Vab)
+	// c = Pab * Pab - (Ra -Rb ) ^ 2
+
+
+	
 
 
 	// this only checks current pos. I need to check pos between
@@ -183,8 +190,8 @@ bool hit(std::shared_ptr<Circle> b, std::shared_ptr<Target> t) {
 	numPoints = dofB/t->radius;
 	for (int i = numPoints; i >0; i--) {
 		int x; int y; int d;
-		x = abs(b->p.x - t->x);
-		y = abs(b->p.y - t->y);
+		x = abs(b->p.x - t->p.x);
+		y = abs(b->p.y - t->p.y);
 		d = sqrt(pow(x,2) + pow(y,2));
 		//cout << "x: " << x << endl;
 		//cout << "y: " << y << endl;
@@ -202,8 +209,8 @@ bool hit(std::shared_ptr<Circle> b, std::shared_ptr<Target> t) {
 
 std::shared_ptr<Target> makeTarget(){
 	std::shared_ptr<Target> target = std::make_shared<Target>();
-	target->x = SCREEN_WIDTH-80;
-	target->y = 10;
+	target->p.x = SCREEN_WIDTH-80;
+	target->p.y = 10;
 	target->radius = 20;
 	target->red = 20;
 	target->green = 20;
@@ -340,7 +347,7 @@ int main(int, char**){
 				target = makeTarget();
 			}
 			
-			filledCircleRGBA(renderer, target->x, target->y, target->radius, flash.r-100, flash.g-100, flash.b, target ->alpha);
+			filledCircleRGBA(renderer, target->p.x, target->p.y, target->radius, flash.r-100, flash.g-100, flash.b, target ->alpha);
 		} else {
 			bool isHit;
 			isHit = false;
@@ -353,7 +360,7 @@ int main(int, char**){
 				isFlash = true;
 				//std::cout << " a HIT!" << std::endl;
 			} else {
-				filledCircleRGBA(renderer, target->x, target->y, target->radius, target->red, target->green, target->blue, target ->alpha);
+				filledCircleRGBA(renderer, target->p.x, target->p.y, target->radius, target->red, target->green, target->blue, target ->alpha);
 				//circleRGBA(renderer, target->x, target->y, target->radius, target->red, target->green, target->blue, target->alpha);
 			}
 		}
