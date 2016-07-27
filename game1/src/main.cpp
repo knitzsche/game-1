@@ -326,15 +326,25 @@ int main(int, char**){
 			if (res == -1) 
 				cout << "=========== render grid circles ERROR res: " << res << endl;
         }
+
+        // reset ripples to include only small enough ones 
+        std::shared_ptr<std::vector<std::shared_ptr<Ripple>>> remaining_ripples = std::make_shared<std::vector<std::shared_ptr<Ripple>>>();
+        for( std::shared_ptr<Ripple> &c : *ripples )
+        {
+            if (c->r <= SCREEN_WIDTH)// this can be improved
+                remaining_ripples->emplace_back(c);
+        }
+        ripples = remaining_ripples;
+        //cout << "RIPPLES: " << ripples->size() << endl;
+
         //grow and render ripple cricles
-        for( std::shared_ptr<Ripple> &c : *ripples ) {
+        for( std::shared_ptr<Ripple> &c : *ripples )
+        {
             growRipple(c);
             SDL_SetRenderDrawColor(renderer, c->rgb.b, c->rgb.g, c->rgb.r, c->rgb.a);
             int res = circleRGBA(renderer, c->p.x, c->p.y, c->r, c->rgb.r, c->rgb.g, c->rgb.b, c->rgb.a);
             if (res == -1) 
                 cout << "=========== render ripple ERROR res: " << res << endl;
-            //TODO if ripple cross a grid, change its color
-            //TODO: remove ripple from vector if out of view, that is if radius > distance from center to
             // each of four corners
             //cout << " size Ripple grid relative" << c->grid_relative.size() << endl;
             for (auto p : c->grid_relative)
@@ -343,7 +353,7 @@ int main(int, char**){
                 if (p->distance < c->r && c->r - p->distance < 50)
                 {
                     SDL_SetRenderDrawColor(renderer, 200, 200, 50, 200);
-                    circleRGBA(renderer, p->circle->p.x, p->circle->p.y, p->circle->r, 230, 10, 10, 255);
+                    filledCircleRGBA(renderer, p->circle->p.x, p->circle->p.y, p->circle->r, 230, 10, 10, 255);
                     //circleRGBA(renderer, p->circle->p.x, p->circle->p.y, p->circle->r, p->circle->rgb.r, p->circle->rgb.g, p->circle->rgb.b, p->circle->rgb.a);
                     
                 }
