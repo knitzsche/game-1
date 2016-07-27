@@ -53,6 +53,11 @@ struct Circle {
 	RGB rgb;
 };
 
+struct PositionRelative {
+    shared_ptr<Circle> circle;
+	double distance;
+};
+
 class  MovingCircle : public Circle {
 public:
 	Position prevP;
@@ -62,6 +67,7 @@ public:
 class  Ripple : public Circle {
 public:
     int expand_speed;
+    vector<shared_ptr<PositionRelative>> grid_relative;
 };
 
 void addRipple(std::shared_ptr<std::vector<std::shared_ptr<Ripple>>> cs, int const& x = 20, int const& y = 80, int const& r = 100, int const& g = 200, int const& b = 200, int const& a = 200, int const& expand_speed = 5) {
@@ -75,6 +81,24 @@ void addRipple(std::shared_ptr<std::vector<std::shared_ptr<Ripple>>> cs, int con
 	c->rgb.a = a;
 	c->expand_speed = expand_speed;
 	cs->emplace_back(c);
+}
+
+double getDistance(Position const& p1, Position const& p2) {
+	return sqrt(pow((p2.x - p1.x), 2) + pow((p2.y - p1.y), 2));
+}
+
+/*
+ * calculate distances from ripple origin to all grid points
+ */
+void addGridToRipple(Ripple &r, vector<shared_ptr<Circle>> const& grid){
+    for (auto c : grid)
+    {
+        shared_ptr<PositionRelative> pos = make_shared<PositionRelative>();
+        pos->circle = c;
+        pos->distance = getDistance(c->p, r.p);
+        //cout << " addGridToR. distance: " << distance << endl;
+        r.grid_relative.emplace_back(pos);
+    }
 }
 
 void addCircle(std::shared_ptr<std::vector<std::shared_ptr<Circle>>> cs, int x = 20, int y = 80, int r = 100, int g = 200, int b = 200, int a = 200) {
@@ -140,10 +164,6 @@ void growRipple(std::shared_ptr<Ripple> t) {
 
 double getDistanceMove(shared_ptr<MovingCircle> c) {
 	return sqrt(pow((c->p.x - c->prevP.x), 2) + pow((c->p.y - c->prevP.y), 2));
-}
-
-double getDistance(Position &p1, Position &p2) {
-	return sqrt(pow((p2.x - p1.x), 2) + pow((p2.y - p1.y), 2));
 }
 
 pair<Position, Position> getNextPosition(shared_ptr<MovingCircle> c) {
@@ -271,6 +291,7 @@ int main(int, char**){
 			if (e.type == SDL_MOUSEBUTTONDOWN){
 				//addRect(rects);
 		        addRipple(ripples, e.button.x, e.button.y);		
+                addGridToRipple((*ripples->back()), (*grid_circles));
 			}
 			// user presses any key
 			if (e.type == SDL_KEYDOWN){
@@ -312,8 +333,21 @@ int main(int, char**){
             int res = circleRGBA(renderer, c->p.x, c->p.y, c->r, c->rgb.r, c->rgb.g, c->rgb.b, c->rgb.a);
             if (res == -1) 
                 cout << "=========== render ripple ERROR res: " << res << endl;
+            //TODO if ripple cross a grid, change its color
             //TODO: remove ripple from vector if out of view, that is if radius > distance from center to
             // each of four corners
+            //cout << " size Ripple grid relative" << c->grid_relative.size() << endl;
+            for (auto p : c->grid_relative)
+            {
+                //cout << "distance: " << p->distance << " radius: " << c->r << endl;
+                if (p->distance < c->r && c->r - p->distance < 50)
+                {
+                    SDL_SetRenderDrawColor(renderer, 200, 200, 50, 200);
+                    circleRGBA(renderer, p->circle->p.x, p->circle->p.y, p->circle->r, 230, 10, 10, 255);
+                    //circleRGBA(renderer, p->circle->p.x, p->circle->p.y, p->circle->r, p->circle->rgb.r, p->circle->rgb.g, p->circle->rgb.b, p->circle->rgb.a);
+                    
+                }
+            }
         }
 		// render gun
 		SDL_SetRenderDrawColor( renderer, 200, 100, 200, 255 );
