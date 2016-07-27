@@ -50,15 +50,31 @@ struct RGB {
 
 struct Circle {
 	Position p;
-	Position prevP;
-	double prevY;
 	int r = 5; // radius
 	RGB rgb;
 };
 
-void addCircle(std::shared_ptr<std::vector<std::shared_ptr<Circle>>> cs) {
+class  MovingCircle : public Circle {
+public:
+	Position prevP;
+	double prevY;
+};
 
+
+void addCircle(std::shared_ptr<std::vector<std::shared_ptr<Circle>>> cs, int x = 20, int y = 80, int r = 100, int g = 200, int b = 200, int a = 200) {
+    //cout << " in addCircle(). x: " << x << " y: " << y << endl;
 	std::shared_ptr<Circle> c = std::make_shared<Circle>();
+	c->p.x = x;
+	c->p.y = y;
+	c->rgb.r = r;
+	c->rgb.g = g;
+	c->rgb.b = b;
+	c->rgb.a = a;
+	cs->emplace_back(c);
+} 
+
+void addMovingCircle(std::shared_ptr<std::vector<std::shared_ptr<MovingCircle>>> cs) {
+	std::shared_ptr<MovingCircle> c = std::make_shared<MovingCircle>();
 	c->p.x = 20;
 	c->prevP.x = 0;
 	c->p.y = 80;
@@ -71,9 +87,8 @@ struct Gun {
 	int y;
 };
 
-void addCirclePrevious(std::shared_ptr<std::vector<std::shared_ptr<Circle>>> cs, std::shared_ptr<Gun> gun, double x, double y) {
-
-	std::shared_ptr<Circle> c = std::make_shared<Circle>();
+void addMovingCirclePrevious(std::shared_ptr<std::vector<std::shared_ptr<MovingCircle>>> cs, std::shared_ptr<Gun> gun, double x, double y) {
+	std::shared_ptr<MovingCircle> c = std::make_shared<MovingCircle>();
 	c->p.x = gun->x;
 	//factor down
 	c->prevP.x = gun->x - ((gun->x - x)/4);
@@ -96,13 +111,13 @@ void wrap(shared_ptr<Circle> t) {
 	}
 }
 
-void moveCircle(std::shared_ptr<Circle> t) {
+void moveCircle(std::shared_ptr<MovingCircle> t) {
 	t->prevP.y = t->p.y;
 	t->p.y = t->p.y+1;
 	wrap(t);
 }
 
-double getDistanceMove(shared_ptr<Circle> c) {
+double getDistanceMove(shared_ptr<MovingCircle> c) {
 	return sqrt(pow((c->p.x - c->prevP.x), 2) + pow((c->p.y - c->prevP.y), 2));
 }
 
@@ -110,7 +125,7 @@ double getDistance(Position &p1, Position &p2) {
 	return sqrt(pow((p2.x - p1.x), 2) + pow((p2.y - p1.y), 2));
 }
 
-pair<Position, Position> getNextPosition(shared_ptr<Circle> c) {
+pair<Position, Position> getNextPosition(shared_ptr<MovingCircle> c) {
 	Position p;
 	Position prevP;
 	double velocy = c->p.y - c->prevP.y;
@@ -129,7 +144,7 @@ pair<Position, Position> getNextPosition(shared_ptr<Circle> c) {
 	return ps;
 }
 
-void moveCircleTrajectory(std::shared_ptr<Circle> c) {
+void moveCircleTrajectory(std::shared_ptr<MovingCircle> c) {
 	double distance = getDistanceMove(c);
 	//cout << c->p.x << "," << c->p.y << endl;
 	Position p;
@@ -139,144 +154,6 @@ void moveCircleTrajectory(std::shared_ptr<Circle> c) {
 	c->prevP.x = ps.second.x;
 	c->prevP.y = ps.second.y;
 	return;
-}
-
-bool hit(std::shared_ptr<Circle> b, std::shared_ptr<Circle> t) {
-	//see if bullet is inside square around target
-	/*
-	double halfR = t->r/2;
-	if (b->p.x > t->p.x - halfR && 
-		b->p.x < t->p.x + halfR &&
-		b->p.y > t->p.y - halfR &&
-		b->p.y < t->p.y + halfR ) {
-
-		return true;
-	}
-	*/
-
-	//Position nextP = getNextPosition(b);
-
-	// Pa is initial position of bullet
-	// Pb is initial position of target
-	// Pab = Pa - Pb which is position of bullet minus target - VECTOR
-	// Va is velocity of bullet, which is really the distance to next position, since v = d/t and t=1
-	// Vb is velocity of target, as above
-	// Vab = Va - Vb which is velocity of bullet minus targeti - a VECTOR
-	// a = ( Vab * Vab ) where that is dot product
-	// b = 2 (Pab * Vab) a dot product
-	// c = Pab * Pab - (Ra -Rb ) ^ 2 cntains a dot product
-	
-
-	//Position bNext = b->p;
-	Position bNext = getNextPosition(b).first;
-	Position tNext = getNextPosition(t).first;
-	//Position tNext = t->p;
-
-	cout << "bNext x,y: "<< bNext.x << "," << bNext.y << endl;
-	cout << "tNext x,y: "<< tNext.x << "," << tNext.y << endl;
-	Position Pab;
-	//Pab.x = abs(b->p.x - bNext.x);
-	//Pab.y = abs(t->p.y - tNext.y);
-	Pab.x = abs(b->p.x - t->p.x);
-	Pab.y = abs(b->p.y - t->p.y);
-	vector<double> Pab_v = {Pab.x, Pab.y};
-
-	//Position bNext = b->p;
-	//Position tNext = t->p;
-
-	// if bullet next is not passed target x, no hit
-	if (bNext.x < tNext.x)
-		return false;
-
-	Position Vab;
-	Vab.x = abs(bNext.x - tNext.x);
-	Vab.y = abs(bNext.y - tNext.y);
-	vector<double> Vab_v = {Vab.x, Vab.y};
-
-	int a = inner_product(Vab_v.begin(), Vab_v.end(), Vab_v.begin(), 0);
-	int b_ = 2 * (inner_product(Pab_v.begin(), Pab_v.end(), Vab_v.begin(), 0));
-	int c = inner_product(Pab_v.begin(), Pab_v.end(), Pab_v.begin(), 0) - pow(b->r + t->r, 2); 
-
-	double discrim = pow(b_, 2) - (4 * a * c);
-
-	bool hit = false;
-	if (discrim > 0) { 
-		cout << " POS: " << discrim << endl;
-		hit = true;
-	} else if (discrim ==  0) { 
-		cout << "ZERO: " << discrim << endl;
-		hit = true;
-	}
-	
-	if (hit)
-		return true;
-	else
-		return false;	
-
-
-
-
-	//double Va = getDistanceMove(b);
-	//double Vb = getDistanceMove(t);
-	
-/*
-	vector<int> Va = {b->prevP.x, b->prevP.y, b->p.x, b->p.y};
-	vector<int> Vb = {t->prevP.x, t->prevP.y, t->p.x, t->p.y};
-*/
-
-	//double Vab = inner_product(Vb.begin(), Vb.end(), ;
-	//Vab = inner_product
-		
-
-	//a = inner_product(
-
-	// this only checks current pos. I need to check pos between
-	// current and previous. one for each distance diameter of target
-	// so calc distance travelled since previous
-	// divide that by target diameter
-	// get points along line for each diameter distance
-	// and check them for hits
-	
-	int dofB;//distance bullet has travelled
-	int deltaXofB;
-	int deltaYofB;
-	int numPoints;
-	deltaXofB = abs(b->p.x - b->prevP.x);
-	deltaYofB = abs(b->p.y - b->prevP.y);
-	dofB = sqrt(pow(deltaXofB,2) + pow(deltaYofB,2));
-	//cout << "dofb: " << dofB << endl;
-	numPoints = dofB/t->r;
-	for (int i = numPoints; i >0; i--) {
-		int x; int y; int d;
-		x = abs(b->p.x - t->p.x);
-		y = abs(b->p.y - t->p.y);
-		d = sqrt(pow(x,2) + pow(y,2));
-		//cout << "x: " << x << endl;
-		//cout << "y: " << y << endl;
-		//cout << "d: " << d << endl;
-		if (d > t->r) {
-			return false;
-		} else {
-			//cout << "HIT. r: " << t->radius << endl;		
-			//cout << "HIT. d: " << d << endl;		
-			cout << "=== HIT" << endl;		
-			return true;
-		}
-	} 
-}
-
-std::shared_ptr<Circle> makeTarget(){
-	std::shared_ptr<Circle> target = std::make_shared<Circle>();
-	target->p.x = SCREEN_WIDTH-80;
-	target->p.y = 10;
-	target->prevP.x = target->p.x;
-	target->prevP.y = target->p.y-1;
-	target->r = 20;
-	target->rgb.r = 20;
-	target->rgb.g = 20;
-	target->rgb.b = 200;
-	target->rgb.a = 255;
-	return target;
 }
 
 int main(int, char**){
@@ -295,10 +172,6 @@ int main(int, char**){
 	std::shared_ptr<Gun> gun = std::make_shared<Gun>();
 	gun->x = 400;
 	gun->y = SCREEN_HEIGHT - 200;
-
-	// make a target
-	std::shared_ptr<Circle> target;
-	target = makeTarget();
 
 	//Setup our window and renderer, this time let's put our window in the center
 	//of the screen
@@ -326,9 +199,26 @@ int main(int, char**){
 
 	// vector of dynamically created resctangles
 	std::shared_ptr<std::vector<std::shared_ptr<SDL_Rect>>> rects = std::make_shared<std::vector<std::shared_ptr<SDL_Rect>>>();
+	// vector of moving moving_circles
+	std::shared_ptr<std::vector<std::shared_ptr<MovingCircle>>> moving_circles = std::make_shared<std::vector<std::shared_ptr<MovingCircle>>>();
 
-	// vector of dynamically created resctangles
-	std::shared_ptr<std::vector<std::shared_ptr<Circle>>> circles = std::make_shared<std::vector<std::shared_ptr<Circle>>>();
+	// vector of moving moving_circles
+	std::shared_ptr<std::vector<std::shared_ptr<Circle>>> grid_circles = std::make_shared<std::vector<std::shared_ptr<Circle>>>();
+
+    int x_iters = int(SCREEN_WIDTH/20);
+    int  y_iters = int(SCREEN_HEIGHT/20);
+    //cout << "x_iters: " << x_iters  << endl;
+    //cout << "y_itrd: " << y_iters << endl;
+    int  grid = 20;
+    for ( int x=0; x <= x_iters; ++x)
+    {
+        for (int y=0; y <= y_iters; ++y)
+        {
+            //cout << "x: " << x << endl;
+            //cout << "y: " << y << endl;
+            addCircle(grid_circles, x * grid, y * grid, 200,200,200, 50);        
+        }
+    }
 
 	SDL_Event e;
 	bool quit = false;
@@ -346,7 +236,6 @@ int main(int, char**){
 		//float ellapsedSecs = (float)startTime/CLOCKS_PER_SEC;
 		//cout << "elapsed: " << ellapsedSecs << endl;; 
 
-
 		SDL_SetRenderDrawColor( renderer, bg.r, bg.g, bg.b, 255 );
 		SDL_RenderClear(renderer);
 		while (SDL_PollEvent(&e)){
@@ -357,8 +246,7 @@ int main(int, char**){
 			// user clicks the mouse
 			if (e.type == SDL_MOUSEBUTTONDOWN){
 				//addRect(rects);
-				//addCircle(circles);
-				addCirclePrevious(circles, gun, e.button.x, e.button.y);
+				addMovingCirclePrevious(moving_circles, gun, e.button.x, e.button.y);
 			}
 			// user presses any key
 			if (e.type == SDL_KEYDOWN){
@@ -373,7 +261,7 @@ int main(int, char**){
 				} else if (e.key.keysym.scancode == SDL_SCANCODE_DOWN) {
 					my += amt;
 				} else if (e.key.keysym.scancode == SDL_SCANCODE_SPACE) {
-					addCirclePrevious(circles, gun, mx, my);
+					addMovingCirclePrevious(moving_circles, gun, mx, my);
 				} else if (e.key.keysym.scancode == SDL_SCANCODE_ESCAPE) {
 					quit = true;
 				}
@@ -386,15 +274,21 @@ int main(int, char**){
 			}
 			*/
 		}
-
+        //render grid cricles
+		for( std::shared_ptr<Circle> &c : *grid_circles ) {
+			SDL_SetRenderDrawColor(renderer, c->rgb.b, c->rgb.g, c->rgb.r, c->rgb.a);
+			int res = filledCircleRGBA(renderer, c->p.x, c->p.y, c->r, c->rgb.r, c->rgb.g, c->rgb.b, c->rgb.a);
+			if (res == -1) 
+				cout << "=========== render grid circles ERROR res: " << res << endl;
+        }
 		// render gun
 		SDL_SetRenderDrawColor( renderer, 200, 100, 200, 255 );
 		SDL_RenderDrawLine(renderer, mx, my, gun->x, gun ->y);
-		filledCircleRGBA(renderer, gun->x, gun->y, 10, 200, 10, 10, target->rgb.a);
+		//filledCircleRGBA(renderer, gun->x, gun->y, 10, 200, 10, 10, target->rgb.a);
 
 		//Render bullets
-		shared_ptr<vector<shared_ptr<Circle>>> newCircles = make_shared<vector<shared_ptr<Circle>>>(); 
-		for( std::shared_ptr<Circle> &c : *circles ) {
+		shared_ptr<vector<shared_ptr<MovingCircle>>> newCircles = make_shared<vector<shared_ptr<MovingCircle>>>(); 
+		for( std::shared_ptr<MovingCircle> &c : *moving_circles ) {
 			SDL_SetRenderDrawColor( renderer, c->rgb.b, c->rgb.g, c->rgb.r, c->rgb.a);
 			
 			int res = filledCircleRGBA(renderer, c->p.x, c->p.y, c->r, c->rgb.r, c->rgb.g, c->rgb.b, c->rgb.a);
@@ -405,35 +299,9 @@ int main(int, char**){
 				newCircles->emplace_back(c); // keep if still on screen
 			}
 		}
-		circles = newCircles;
+		moving_circles = newCircles;
 
-		// render target
-		if (isFlash) { 
-			flashCount++;
-			if (flashCount >= 30) {
-				flashCount = -1;
-				isFlash=false;
-				target = makeTarget();
-			}
-			
-			filledCircleRGBA(renderer, target->p.x, target->p.y, target->r, flash.r-100, flash.g-100, flash.b, target->rgb.a);
-		} else {
-			bool isHit;
-			isHit = false;
-			for (auto &c : *circles){
-				if (hit(c, target)) {
-					isHit = true;
-				}
-			}
-			if (isHit) {
-				isFlash = true;
-				filledCircleRGBA(renderer, target->p.x, target->p.y, target->r, flash.r-100, flash.g-100, flash.b, target->rgb.a);
-				//std::cout << " a HIT!" << std::endl;
-			} else {
-				filledCircleRGBA(renderer, target->p.x, target->p.y, target->r, target->rgb.r, target->rgb.g, target->rgb.b, target->rgb.a);
-			}
-		}
-		moveCircleTrajectory(target);
+		//moveCircleTrajectory(target);
 		//moveCircle(target);
 		//Update the screen
 		SDL_RenderPresent(renderer);
