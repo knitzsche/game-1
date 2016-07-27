@@ -27,7 +27,6 @@ void logSDLError(std::ostream &os, const std::string &msg){
 }
 
 void addRect(std::shared_ptr<std::vector<std::shared_ptr<SDL_Rect>>> rs) {
-
 	std::shared_ptr<SDL_Rect> r = std::make_shared<SDL_Rect>();
 	r->x = 0;
 	r->y = 0;
@@ -60,6 +59,23 @@ public:
 	double prevY;
 };
 
+class  Ripple : public Circle {
+public:
+    int expand_speed;
+};
+
+void addRipple(std::shared_ptr<std::vector<std::shared_ptr<Ripple>>> cs, int const& x = 20, int const& y = 80, int const& r = 100, int const& g = 200, int const& b = 200, int const& a = 200, int const& expand_speed = 5) {
+    //cout << " in addCircle(). x: " << x << " y: " << y << endl;
+	std::shared_ptr<Ripple> c = std::make_shared<Ripple>();
+	c->p.x = x;
+	c->p.y = y;
+	c->rgb.r = r;
+	c->rgb.g = g;
+	c->rgb.b = b;
+	c->rgb.a = a;
+	c->expand_speed = expand_speed;
+	cs->emplace_back(c);
+}
 
 void addCircle(std::shared_ptr<std::vector<std::shared_ptr<Circle>>> cs, int x = 20, int y = 80, int r = 100, int g = 200, int b = 200, int a = 200) {
     //cout << " in addCircle(). x: " << x << " y: " << y << endl;
@@ -115,6 +131,11 @@ void moveCircle(std::shared_ptr<MovingCircle> t) {
 	t->prevP.y = t->p.y;
 	t->p.y = t->p.y+1;
 	wrap(t);
+}
+
+void growRipple(std::shared_ptr<Ripple> t) {
+	t->r = t->r + t->expand_speed;
+	//wrap(t);
 }
 
 double getDistanceMove(shared_ptr<MovingCircle> c) {
@@ -202,8 +223,11 @@ int main(int, char**){
 	// vector of moving moving_circles
 	std::shared_ptr<std::vector<std::shared_ptr<MovingCircle>>> moving_circles = std::make_shared<std::vector<std::shared_ptr<MovingCircle>>>();
 
-	// vector of moving moving_circles
+	// vector of grid circles 
 	std::shared_ptr<std::vector<std::shared_ptr<Circle>>> grid_circles = std::make_shared<std::vector<std::shared_ptr<Circle>>>();
+
+	// vector of ripples circles 
+	std::shared_ptr<std::vector<std::shared_ptr<Ripple>>> ripples = std::make_shared<std::vector<std::shared_ptr<Ripple>>>();
 
     int x_iters = int(SCREEN_WIDTH/20);
     int  y_iters = int(SCREEN_HEIGHT/20);
@@ -246,7 +270,7 @@ int main(int, char**){
 			// user clicks the mouse
 			if (e.type == SDL_MOUSEBUTTONDOWN){
 				//addRect(rects);
-				addMovingCirclePrevious(moving_circles, gun, e.button.x, e.button.y);
+		        addRipple(ripples, e.button.x, e.button.y);		
 			}
 			// user presses any key
 			if (e.type == SDL_KEYDOWN){
@@ -280,6 +304,16 @@ int main(int, char**){
 			int res = filledCircleRGBA(renderer, c->p.x, c->p.y, c->r, c->rgb.r, c->rgb.g, c->rgb.b, c->rgb.a);
 			if (res == -1) 
 				cout << "=========== render grid circles ERROR res: " << res << endl;
+        }
+        //grow and render ripple cricles
+        for( std::shared_ptr<Ripple> &c : *ripples ) {
+            growRipple(c);
+            SDL_SetRenderDrawColor(renderer, c->rgb.b, c->rgb.g, c->rgb.r, c->rgb.a);
+            int res = circleRGBA(renderer, c->p.x, c->p.y, c->r, c->rgb.r, c->rgb.g, c->rgb.b, c->rgb.a);
+            if (res == -1) 
+                cout << "=========== render ripple ERROR res: " << res << endl;
+            //TODO: remove ripple from vector if out of view, that is if radius > distance from center to
+            // each of four corners
         }
 		// render gun
 		SDL_SetRenderDrawColor( renderer, 200, 100, 200, 255 );
