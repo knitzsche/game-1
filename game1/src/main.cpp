@@ -14,14 +14,17 @@
 #include "cleanup.h"
 
 using namespace std;
-const int SCREEN_WIDTH  = 1280;
-const int SCREEN_HEIGHT = 720;
 
-/*
- * Log an SDL error with some error message to the output stream of our choice
- * @param os The output stream to write the message too
- * @param msg The error message to write, format will be msg error: SDL_GetError()
- */
+int SCREEN_WIDTH  = 1280;
+int SCREEN_HEIGHT = 720;
+
+void setScreen(){
+    SDL_DisplayMode DM;
+    SDL_GetCurrentDisplayMode(0, &DM);
+    SCREEN_WIDTH = DM.w;
+    SCREEN_HEIGHT = DM.h;
+}
+
 void logSDLError(std::ostream &os, const std::string &msg){
 	os << msg << " error: " << SDL_GetError() << std::endl;
 }
@@ -68,9 +71,11 @@ class  Ripple : public Circle {
 public:
     int expand_speed;
     vector<shared_ptr<PositionRelative>> grid_relative;
+    int width = 50;
 };
 
-void addRipple(std::shared_ptr<std::vector<std::shared_ptr<Ripple>>> cs, int const& x = 20, int const& y = 80, int const& r = 100, int const& g = 200, int const& b = 200, int const& a = 200, int const& expand_speed = 5) {
+
+void addRipple(std::shared_ptr<std::vector<std::shared_ptr<Ripple>>> cs, int const& x = 20, int const& y = 80, int const& r = 100, int const& g = 200, int const& b = 200, int const& a = 200, int const& expand_speed = 5, int const& width = 50) {
     //cout << " in addCircle(). x: " << x << " y: " << y << endl;
 	std::shared_ptr<Ripple> c = std::make_shared<Ripple>();
 	c->p.x = x;
@@ -80,6 +85,7 @@ void addRipple(std::shared_ptr<std::vector<std::shared_ptr<Ripple>>> cs, int con
 	c->rgb.b = b;
 	c->rgb.a = a;
 	c->expand_speed = expand_speed;
+    c->width = width;
 	cs->emplace_back(c);
 }
 
@@ -203,6 +209,8 @@ int main(int, char**){
 		logSDLError(std::cout, "SDL_Init");
 		return 1;
 	}
+    setScreen();
+
 
 	RGB bg;
 	bg.r = 20; bg.g = 20; bg.b = 20; bg.a = 255;
@@ -327,7 +335,7 @@ int main(int, char**){
 				cout << "=========== render grid circles ERROR res: " << res << endl;
         }
 
-        // reset ripples to include only small enough ones 
+        // reset ripples to exclude those that have expanded too much
         std::shared_ptr<std::vector<std::shared_ptr<Ripple>>> remaining_ripples = std::make_shared<std::vector<std::shared_ptr<Ripple>>>();
         for( std::shared_ptr<Ripple> &c : *ripples )
         {
@@ -345,12 +353,12 @@ int main(int, char**){
             int res = circleRGBA(renderer, c->p.x, c->p.y, c->r, c->rgb.r, c->rgb.g, c->rgb.b, c->rgb.a);
             if (res == -1) 
                 cout << "=========== render ripple ERROR res: " << res << endl;
-            // each of four corners
             //cout << " size Ripple grid relative" << c->grid_relative.size() << endl;
+            //draw grid circles inside ripple width ripple color
             for (auto p : c->grid_relative)
             {
                 //cout << "distance: " << p->distance << " radius: " << c->r << endl;
-                if (p->distance < c->r && c->r - p->distance < 50)
+                if (p->distance < c->r && c->r - p->distance < c->width)
                 {
                     SDL_SetRenderDrawColor(renderer, 200, 200, 50, 200);
                     filledCircleRGBA(renderer, p->circle->p.x, p->circle->p.y, p->circle->r, 230, 10, 10, 255);
